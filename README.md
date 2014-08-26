@@ -1,4 +1,5 @@
 Vigaro
 ======
 
-Microcontroller VGA graphics card
+Minimal microcontroller VGA graphics card
+
