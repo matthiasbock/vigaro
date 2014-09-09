@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!-- saved from url=(0040)http://elm-chan.org/works/vp/report.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="start" title="Site Top" href="http://elm-chan.org/">
+<link rel="up" title="Audio" href="http://elm-chan.org/he_a_e.html">
+<link rel="alternate" hreflang="ja" title="Japanese version" href="http://elm-chan.org/works/vp/report_j.html">
+<link rel="stylesheet" href="./ELM - Cheap DSP Experiments_files/works_e.css" type="text/css" media="screen" title="ELM Default">
+<style type="text/css" media="screen" title="ELM Default">
+p span.fig {font-style: italic;}
+h4 {margin-top: 1.5em; clear: both;}
+</style>
+<title>ELM - Cheap DSP Experiments</title>
+</head>
+
+<body>
+<div class="header">
+<p class="hdh"><a href="http://elm-chan.org/"><img src="./ELM - Cheap DSP Experiments_files/header.png" alt="ELM Home Page" width="400" height="27"></a></p>
+<h1>Cheap DSP Experiments</h1>
+<p class="hdd">April 3, 2004<br>Update: April 13, 2004</p>
+<hr class="hds">
+</div>
+
+<div class="abst">
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/vp.jpeg" width="312" height="240" alt="Circuit Board">
+<p>This project is an experiment of the Digital Signal Processing with a cheap microcontroller instead of an ordinary digital signal processor. Recent 8 bit microcontrollers have sufficient processing performance so that they can be used for simple audio signal processing.</p>
+<p>There are some simple audio processing, such as <em>Delay</em>, <em>Echo</em>, <em>Pitch Conversion</em>, that easy to experiment. In old days, solid state audio processors had realized those audio effects with analog delay elements called <em>BBD</em>(charge coupled device). Mainly this project follows these process in digital signal processing.</p>
+</div>
+
+
+<div class="para">
+<h3>Hardware</h3>
+<h4>Block Diagram</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/vp_blk1.png" width="285" height="170" alt="Block Diagram">
+<p><span class="fig">Figure 1</span> shows the block diagram for this project. The microcontroller samples input signal and applies any process, and then output the processed wave form. When the microcontroller has any analog I/O units, such as ADC, DAC and PWM, no additional component is required. However signal processing requires a number of working memory proportional to the data latency so that built-in RAM will not suffice for the process and most case requires any external RAM.</p>
+<p>This is the <a href="http://elm-chan.org/works/vp/vp.png">Circuit Diagram for this project</a>. An <em>ATtiny26</em> which has analog I/O units, is used for digital signal processing. Recently, it have been appeared on the market with very low price. It has 11 10bit-ADC channels and two 8bit-PWM channels for analog interfacing. Since the built-in RAM is only 128 bytes, any external RAM is required. However ATtiny26 has only 16 I/O pins, any port extension may be needed.</p>
+
+<h4>Memory Control</h4>
+<p>I found out a <em>1Mbit (256Kx4) DRAM</em> in my junk box and tried to use it as an external RAM. It could be attached to the AVR via only 13 I/O ports without any I/O extension. Because multi-bit dynamic RAM has an OE signal and bidirectional data ports, the data ports can share address bus for data transfer after row/column addresses are latched. Thus number of I/O ports could be reduced by the triple multiplexed control. Note that this control method is effective for only FPM/EDO DRAM. The control timings are shown in <span class="fig">Figure 2</span>. The byte of a sample data is divided in two nibbles and they are read/written to RAM in page mode cycles. Since the DRAM requires refresh cycles to maintain contents of memory cells, at least minimum required refresh cycles must be inserted into processing loop, e.g. for 32k processing loop per second, 2 refresh cycles are needed every loop. For more details, please refer to the source files.</p>
+<br>
+<img src="./ELM - Cheap DSP Experiments_files/vp_blk2.png" width="800" height="200" alt="Memory Timing">
+
+<h4>Analog Interfacing</h4>
+<p>The A-D converter of ATtiny26 can operate at 15ksps with maximum accuracy or at 77ksps with maximum speed. In this project, <em>8 bit/38.5 ksps</em> is used mainly so that audio bandwidth of an FM radio will be expected. At 16 MHz operation, 416 clock of processing time is given for each sample.</p>
+<p>The ATtiny26 doesn't have D-A converter, however, it has 64 MHz PLL clock for TC1 so that <em>8 bit/250 kHz PWM output</em> can be used. When use this for analog output, higher cut-off low pass filter can be used and it can cover audio bandwidth.</p>
+<p>Value of setup volume is read at first and is used for effect value or any setup data.</p>
+</div>
+
+
+<div class="para">
+<h3>Examples</h3>
+
+<h4>Delay</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_dly.png" width="250" height="100" alt="Delay">
+<p>Delay line is one of the fundamental processes in digital signal processing. It delays input signal N sample time. This is mostly incorporated into more complicated process as a processing element rather than stand alone use.</p>
+<p>Firmware for this process is <em><kbd>VP_DLY.ASM</kbd></em>. Delay time can be set between 0 and 1.7 seconds with the setting volume.</p>
+
+<h4>Echo</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_echo.png" width="250" height="150" alt="Echo">
+<p>This is a simple application of Delay. The delayed signal is fed-back to input. Input signal will repeat with reducing its amplitude. The feed-back gain <em>a</em> must be set to less than 1 for proper operation, or the processing loop will oscillate. When feed-forward the delayed data to output with a=1, it will become a comb filter.</p>
+<p>Firmware for this process is <em><kbd>VP_ECHO.ASM</kbd></em>. Echo delay time can be set between 0 and 420 milliseconds with the setting volume. Feed-back gain is fixed to 0.5.</p>
+
+
+<h4>Pitch Conversion</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_pitch.png" width="300" height="150" alt="Pitch Conversion">
+<p>The delay element is realized by an N sample ring buffer (FIFO). What will occur the effect when read rate varies and write rate is left fixed? Of course the pitch of output sound will be changed. This is the pitch conversion process without tempo change called "Pitch Changer".</p>
+<p>In actual implement, the processing loop is driven in sampling rate of input signal and output sampling rate is changed equivalency by adjusting increase rate of the read pointer. The fraction of read pointer is used for interpolation to reduce beat distortion. At pitch up process, as a result, it becomes down sampling and aliasing distortion will appear, however, it seems hardly conscious of the distortion.<br class="clr"></p>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_over.png" width="350" height="450" alt="Click Noise Suppression">
+<p>Since the ring buffer has limited length, pointer cross over will occur in a cycle. At the instant of pointer passing, a wave form for one buffer length is inserted or removed. The wave division granularity affects listenability, too long buffer will drop or double a part of pronunciation, so that a proper buffer length should be chosen with care. According to some trial, around 20 millisecond seems suitable for speech. This requires the buffer length of several hundred samples. Some microcontroller will able to work without external RAM.</p>
+<p><span class="fig">Figure 6</span> shows a movement of read pointer and data flow from the view point of write pointer. When read pointer passes write pointer, the wave form will lose its continuity and it appear as click noise. To suppress this effect, cross fade at block change is applied. In the concrete, pushed out data is stored into blending buffer, the buffer covers opposite end of ring buffer. The cross fade is done during passing this range for 32 sample time.</p>
+<p>Firmware for this process is <em><kbd>VP_PITCH.ASM</kbd></em>. Conversion ratio can be set between 0.5 and 2.0 with the setting volume. Number of multiplication per sample is two or six times for interpolation and boundary blending. This is too heavy process for ATtiny26 which has no multiplier, data losing are occured at 38.5 ksps, so that 32 ksps is used for only this configuration.</p>
+
+<h4>Pitch Modulation</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_mod.png" width="300" height="150" alt="Pitch Mod">
+<p>This is a variation of pitch conversion. An audio effect like wow/flutter can be generated by modulating read sampling rate. The pointer cross over will not occur with sufficient buffer length and delaying read pointer. Firmware for this process is <em><kbd>VP_WOW.ASM</kbd></em>.</p>
+
+<h4>Filter</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_fil.png" width="400" height="180" alt="FIR Filter">
+<p>This is just like digital signal processing in these examples. For the fundamentals of digital filter, please refer to any textbooks on digital signal processing. <span class="fig">Figure 8</span> shows the signal flow diagram of <em>FIR filter</em>. The filter response is determined by filter parameter witch is summing gain for each taps. Larger number of taps increase frequency resolution, however, number of multiply/accumulate operation will also increase proportional to the number of taps.</p>
+<br>
+<img class="lset" src="./ELM - Cheap DSP Experiments_files/wf_fil.png" width="320" height="240" alt="FIR filter wave form">
+<p>Since the ATtiny26 does not have multiplier, an unsigned multiply takes 34 clocks. Plus memory access, sign conversion and accumulation are required for each taps, so that number of taps will be very limited. I tried to replace the multiplication with table conversion, it could be take 14 clocks for each taps, 23 taps are secured at 38.5k sps. I have not heard about digital signal processor with no multiplier, however, such the cheap microcontroller seems able to be used as a digital signal processor. The ATmega series microcontroller which has signed unsigned multiplication will take 8 clocks for each taps.</p>
+<p>Firmware for this process is <em><kbd>VP_FIL.ASM</kbd></em>, and multiplication table <em><kbd>VP_FIL_M.HEX</kbd></em>.</p>
+
+<h4>Balanced Modulation</h4>
+<img class="rset" src="./ELM - Cheap DSP Experiments_files/blk_bm.png" width="250" height="150" alt="Balanced Modulation">
+<p>Balanced Modulation is a kind of Amplitude Modulation (AM). Ordinary amplitude modulation uses only positive region of the carrier amplitude (fc * (1 + fs)), and the balanced modulation uses positive and negative region of the carrier amplitude in center value of zero carrier (fc * fs). The balanced modulation is one of the very important process for digital communication technology. When multiply input signal by a carrier signal, many frequency components will be generated due to following formula of sine wave multiplication.</p>
+<img src="./ELM - Cheap DSP Experiments_files/mult.png" alt="" width="500" height="55">
+<p>The generated signal is like a "robot voice". Firmware for this process is <em><kbd>VP_MOD.ASM</kbd></em>. Modulating frequency can be set between 0 Hz and 1200 Hz with the setting volume. <span class="mfd">added at Apr.13 2004</span></p>
+
+</div>
+
+<div class="para">
+&nbsp;
+<h3>Technical Data</h3>
+<ul class="flat">
+<li><a href="http://elm-chan.org/works/vp/vp.png">Circuit Diagram</a> | <a href="http://elm-chan.org/works/vp/vpsrc.zip">Sample Firmwares</a></li>
+<li><a href="http://elm-chan.org/works/vp/original.mpg">Original sound</a> | <a href="http://elm-chan.org/works/vp/echo.mpg">Echo</a> | <a href="http://elm-chan.org/works/vp/pitch_up.mpg">Pitch Up</a> | <a href="http://elm-chan.org/works/vp/pitch_down.mpg">Pitch Down</a> | <a href="http://elm-chan.org/works/vp/wow.mpg">Wow</a> | <a href="http://elm-chan.org/works/vp/bm.mpg">Balanced Modulation</a></li>
+</ul>
+</div>
+
+<p class="foot"><img alt="Sign" src="./ELM - Cheap DSP Experiments_files/sign.png"></p>
+
+
+
+</body></html>
